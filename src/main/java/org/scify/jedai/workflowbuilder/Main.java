@@ -563,4 +563,35 @@ public class Main {
         }
         return;
     }
+
+    // public static void Test(String str) {
+    //     System.out.println("In test" + str);
+    //     Main.string_list_.add(str);
+    //     System.out.println(String.valueOf(Main.string_list_.size()));
+    //     return;
+    // }
+
+    // public static void Test(String[] str_arr_0,
+    //                         String[] str_arr_1) {
+    //     System.out.println("str_arr_0: " + Arrays.toString(str_arr_0));
+    //     System.out.println("str_arr_1: " + Arrays.toString(str_arr_1));
+    //     return;
+    // }
+
+    public static void AddNewProfile(String[]   key_arr,
+                                     String[] value_arr) {
+
+        final EntityProfile newProfile = new EntityProfile(String.valueOf(Main.entity_profiles_.size()));//create a new profile for each record
+        Main.entity_profiles_.add(newProfile);
+        for (int i = 0; i < key_arr.length; i++) {
+            newProfile.addAttribute(key_arr[i], 
+                                  value_arr[i]);
+        }
+        System.out.println("Main.entity_profiles_.size(): " + String.valueOf(Main.entity_profiles_.size()));
+        return;
+    }
+
+    private static List<EntityProfile> entity_profiles_ = new ArrayList<EntityProfile>();
+
+    // EntityProfile newProfile
 }
