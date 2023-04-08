@@ -47,6 +47,13 @@ public class GroupLinkage extends AbstractEntityMatching {
     public GroupLinkage(List<EntityProfile> profilesD1, List<EntityProfile> profilesD2) {
         this(0.1f, profilesD1, profilesD2, RepresentationModel.TOKEN_UNIGRAMS, SimilarityMetric.COSINE_SIMILARITY);
     }
+    
+    public GroupLinkage(List<EntityProfile> profilesD1, List<EntityProfile> profilesD2, float graph_linke_simTh) {
+        // this(0.1f, profilesD1, profilesD2, RepresentationModel.TOKEN_UNIGRAMS, SimilarityMetric.COSINE_SIMILARITY);
+        this(graph_linke_simTh, profilesD1, profilesD2, RepresentationModel.TOKEN_UNIGRAMS, SimilarityMetric.COSINE_SIMILARITY);
+        // this(0.9f, profilesD1, profilesD2, RepresentationModel.TOKEN_UNIGRAMS, SimilarityMetric.COSINE_SIMILARITY); // by wenzhi
+        // this(0.5f, profilesD1, profilesD2, RepresentationModel.TOKEN_UNIGRAMS, SimilarityMetric.COSINE_SIMILARITY); // by wenzhi
+    }
 
     public GroupLinkage(float simThr, List<EntityProfile> profiles, RepresentationModel model, SimilarityMetric simMetric) {
         this(simThr, profiles, null, model, simMetric);

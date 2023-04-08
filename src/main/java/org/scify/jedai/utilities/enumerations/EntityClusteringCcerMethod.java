@@ -68,4 +68,27 @@ public enum EntityClusteringCcerMethod {
                 return new UniqueMappingClustering();
         }
     }
+
+    public static IEntityClustering getConfiguration(EntityClusteringCcerMethod ecMethod, float unique_map_simTh) {
+        switch (ecMethod) {
+            case UNIQUE_MAPPING_CLUSTERING:
+                return new UniqueMappingClustering(unique_map_simTh);
+            case ROW_COLUMN_ASSIGNMENT_CLUSTERING:
+                return new RowColumnClustering();
+            case BEST_ASSIGNMENT_HEURISTIC_CLUSTERING:
+                return new BestAssignmentHeuristic();
+            case CONNECTED_COMPONENTS_CCER:
+                return new ConnectedComponentsClusteringCCER();
+            case BEST_MATCH_CLUSTERING:
+                return new BestMatchClustering();
+            case SYMMETRIC_BEST_MATCH_CLUSTERING:
+                return new ExactClustering();
+            case RICOCHETSR_CLUSTERING_CCER:
+                return new RicochetSRClusteringCCER();
+            case KIRALY_CLUSTERING:
+                return new KiralyMSMApproxClustering();
+            default:
+                return new UniqueMappingClustering(unique_map_simTh);
+        }
+    }
 }

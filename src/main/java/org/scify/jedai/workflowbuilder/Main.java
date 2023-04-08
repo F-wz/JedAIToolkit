@@ -20,16 +20,43 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Dictionary;
 import java.util.List;
 import java.util.Scanner;
+
+import java.io.FileReader;
+import java.io.FileWriter;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.swing.text.html.parser.Entity;
+
+import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+
+// import javax.xml.stream.events.Attribute;
+
+import org.apache.jena.base.Sys;
+import org.apache.jena.sparql.expr.ExprException;
+import org.apache.jena.sparql.function.library.print;
 import org.apache.log4j.BasicConfigurator;
 import org.scify.jedai.blockbuilding.IBlockBuilding;
 import org.scify.jedai.blockprocessing.IBlockProcessing;
+import org.scify.jedai.datamodel.Attribute;
 import org.scify.jedai.datamodel.AbstractBlock;
 import org.scify.jedai.datamodel.EntityProfile;
 import org.scify.jedai.datamodel.EquivalenceCluster;
 import org.scify.jedai.datamodel.SimilarityPairs;
 import org.scify.jedai.datareader.entityreader.EntitySerializationReader;
+import org.scify.jedai.datareader.entityreader.EntityCSVReader;
+import org.scify.jedai.datareader.entityreader.EntityDBReader;
 import org.scify.jedai.datareader.entityreader.IEntityReader;
 import org.scify.jedai.datareader.groundtruthreader.GtSerializationReader;
 import org.scify.jedai.datareader.groundtruthreader.IGroundTruthReader;
@@ -46,6 +73,16 @@ import org.scify.jedai.utilities.enumerations.ComparisonCleaningMethod;
 import org.scify.jedai.utilities.enumerations.EntityClusteringCcerMethod;
 import org.scify.jedai.utilities.enumerations.EntityClusteringDerMethod;
 import org.scify.jedai.utilities.enumerations.EntityMatchingMethod;
+
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.BufferedReader;
+import java.lang.*;
+import java.util.*;
+
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 /**
  *
@@ -370,5 +407,160 @@ public class Main {
         ClustersPerformance clp = new ClustersPerformance(entityClusters, duplicatePropagation);
         clp.setStatistics();
         clp.printStatistics(totalTime, workflowName.toString(), workflowConf.toString());
+    }
+
+    public static void ErDBInterface(String table_0_file_path,
+                                     String table_1_file_path,
+                                     String table_0_id,
+                                     String table_1_id,
+                                     float graph_linke_simTh,
+                                     float  unique_map_simTh,
+                                     String m_path) {
+
+        BasicConfigurator.configure();
+
+        // Entity Resolution type selection
+
+        // Data Reading
+        // final AbstractDuplicatePropagation duplicatePropagation;
+        final List<EntityProfile> profilesD1, profilesD2;
+
+        String url = "postgresql://localhost/postgres";
+    
+        final EntityDBReader dbReader1 = new EntityDBReader(url);
+    	dbReader1.setTable(table_0_file_path);
+    	dbReader1.setUser("postgres");
+    	dbReader1.setPassword("postgres");
+    	dbReader1.setSSL(false);
+        profilesD1 = dbReader1.getEntityProfiles();
+    
+        final EntityDBReader dbReader2 = new EntityDBReader(url);
+    	dbReader2.setTable(table_1_file_path);
+    	dbReader2.setUser("postgres");
+    	dbReader2.setPassword("postgres");
+    	dbReader2.setSSL(false);
+        profilesD2 = dbReader2.getEntityProfiles();
+
+        ErContent(profilesD1, profilesD2, table_0_id, table_1_id,
+                    graph_linke_simTh,
+                     unique_map_simTh, m_path);
+
+        return;
+    }
+    
+    private static void ErContent(List<EntityProfile> table_0_profiles, 
+                                  List<EntityProfile> table_1_profiles,
+                                               String table_0_id,
+                                               String table_1_id,
+                                               float graph_linke_simTh,
+                                               float  unique_map_simTh,
+                                               String m_path) {
+
+        final StringBuilder workflowConf = new StringBuilder();
+        final StringBuilder workflowName = new StringBuilder();
+
+        // Block Building
+        // final TIntList bbMethodIds = getBlockBuildingMethod();
+        final TIntList bbMethodIds = new TIntArrayList();
+        // bbMethodIds.add(1); // "Extended Q-Grams Blocking"
+                            // "Extended Sorted Neighborhood"
+                            // "Extended Suffix Arrays Blocking"
+                            // "LSH Minhash Blocking"
+                            // "LSH Superbit Blocking"
+                            // "Q-Grams Blocking"
+                            // "Sorted Neighborhood"
+                            // "Standard/Token Blocking"
+        bbMethodIds.add(9); // "Suffix Arrays Blocking"
+        List<AbstractBlock> blocks = new ArrayList<>();
+
+        float totalTime = 0;
+        for (TIntIterator bbIterator = bbMethodIds.iterator(); 
+                          bbIterator.hasNext();) {
+            float time1 = System.currentTimeMillis();
+            
+            final IBlockBuilding blockBuildingMethod 
+                    = BlockBuildingMethod.getDefaultConfiguration(
+                        BlockBuildingMethod.values()[bbIterator.next() - 1]);
+
+            blocks.addAll(blockBuildingMethod.getBlocks(table_0_profiles, 
+                                                        table_1_profiles));
+
+            float time2 = System.currentTimeMillis();
+
+            totalTime += time2 - time1;
+            workflowConf.append(blockBuildingMethod.getMethodConfiguration()).append("\n");
+            workflowName.append(blockBuildingMethod.getMethodName()).append("->");
+        }
+
+        // Entity Matching
+        // int emMethodId = getEntityMatchingMethod();
+        int emMethodId = 1;
+        float time7 = System.currentTimeMillis();
+
+        final IEntityMatching entityMatchingMethod 
+             = EntityMatchingMethod.getConfiguration(table_0_profiles, 
+                                                     table_1_profiles, EntityMatchingMethod.values()[emMethodId - 1],
+                                                     graph_linke_simTh);
+        final SimilarityPairs simPairs = entityMatchingMethod.executeComparisons(blocks);
+
+        float time8 = System.currentTimeMillis();
+
+        totalTime += time8- time7;
+        workflowConf.append(entityMatchingMethod.getMethodConfiguration()).append("\n");
+        workflowName.append(entityMatchingMethod.getMethodName()).append("->");
+        // System.out.println("Entity Matching overhead time\t:\t" + (time8 - time7));
+
+        // Entity Clustering
+        final IEntityClustering entityClusteringMethod;
+
+        System.out.println("unique_map_simTh: " + unique_map_simTh);
+
+        // System.out.println("\n\nUnique Mapping Clustering is the only Entity Clustering method compatible with Clean-Clean ER");
+        entityClusteringMethod = EntityClusteringCcerMethod.getConfiguration(EntityClusteringCcerMethod.UNIQUE_MAPPING_CLUSTERING,
+                                                                             unique_map_simTh);
+
+        final EquivalenceCluster[] entityClusters = entityClusteringMethod.getDuplicates(simPairs);
+
+        try {
+            StringBuilder sb = new StringBuilder();
+            sb.append(table_0_id
+              + "," + table_1_id + "\n");
+            final PrintWriter printWriter = new PrintWriter(new File(m_path));
+
+            for (int i = 0 ; i < entityClusters.length; i++) {
+                TIntList entityIdsD1 = entityClusters[i].getEntityIdsD1();
+                TIntList entityIdsD2 = entityClusters[i].getEntityIdsD2();
+    
+                if (entityIdsD1.size() == 0 || entityIdsD2.size() == 0){
+                    continue;
+                }
+                for (int j = 0; j < entityIdsD1.size(); j++) {
+                    Set<Attribute> table_0_attr = table_0_profiles.get(entityIdsD1.get(j)).getAttributes(),
+                                   table_1_attr = table_1_profiles.get(entityIdsD2.get(j)).getAttributes();
+                    
+                    for(Attribute attr : table_0_attr) {
+                        if (!attr.getName().equals(table_0_id)) {
+                            continue;
+                        }
+                        sb.append("\"" + attr.getValue() + "\",\"");
+                        break;
+                    }
+                    for(Attribute attr : table_1_attr) {
+                        if (!attr.getName().equals(table_1_id)) {
+                            continue;
+                        }
+                        sb.append(attr.getValue() + "\"\n");
+                        break;
+                    }
+                }
+            }
+    
+            printWriter.write(sb.toString());
+            printWriter.close();
+        }
+        catch (Exception e) {
+            System.out.println(e);
+        }
+        return;
     }
 }

@@ -40,4 +40,15 @@ public enum EntityMatchingMethod {
                 return new ProfileMatcher(profilesD1, profilesD2);
         }
     }
+    
+    public static IEntityMatching getConfiguration(List<EntityProfile> profilesD1, List<EntityProfile> profilesD2, EntityMatchingMethod emMethod, float graph_linke_simTh) {
+        switch(emMethod) {
+            case GROUP_LINKAGE:
+                return new GroupLinkage(profilesD1, profilesD2, graph_linke_simTh);
+            case PROFILE_MATCHER:
+                return new ProfileMatcher(profilesD1, profilesD2);
+            default:
+                return new ProfileMatcher(profilesD1, profilesD2);
+        }
+    }
 }
