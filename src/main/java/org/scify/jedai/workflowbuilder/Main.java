@@ -593,5 +593,29 @@ public class Main {
 
     private static List<EntityProfile> entity_profiles_ = new ArrayList<EntityProfile>();
 
+    public static void AddProfileToLeft(String[]   key_arr,
+                                        String[] value_arr) {
+        final EntityProfile newProfile = new EntityProfile(String.valueOf(Main.left_entity_profiles_.size()));//create a new profile for each record
+        Main.left_entity_profiles_.add(newProfile);
+        for (int i = 0; i < key_arr.length; i++) {
+            newProfile.addAttribute(key_arr[i], 
+                                  value_arr[i]);
+        }
+        return;
+    }
+
+    public static void AddProfileToRight(String[]   key_arr,
+                                         String[] value_arr) {
+        final EntityProfile newProfile = new EntityProfile(String.valueOf(Main.right_entity_profiles_.size()));//create a new profile for each record
+        Main.right_entity_profiles_.add(newProfile);
+        for (int i = 0; i < key_arr.length; i++) {
+            newProfile.addAttribute(key_arr[i], 
+                                  value_arr[i]);
+        }
+        return;
+    }
+    
+    private static List<EntityProfile>  left_entity_profiles_ = new ArrayList<EntityProfile>();
+    private static List<EntityProfile> right_entity_profiles_ = new ArrayList<EntityProfile>();
     // EntityProfile newProfile
 }
