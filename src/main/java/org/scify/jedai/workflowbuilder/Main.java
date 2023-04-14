@@ -409,52 +409,25 @@ public class Main {
         clp.printStatistics(totalTime, workflowName.toString(), workflowConf.toString());
     }
 
-    public static void ErDBInterface(String table_0_file_path,
-                                     String table_1_file_path,
-                                     String table_0_id,
-                                     String table_1_id,
-                                     float graph_linke_simTh,
-                                     float  unique_map_simTh,
-                                     String m_path) {
+    public static void EntityResolution() {
+        float graph_linke_simTh = (float)0.0;
+        float  unique_map_simTh = (float)0.0;
 
-        BasicConfigurator.configure();
-
-        // Entity Resolution type selection
-
-        // Data Reading
-        // final AbstractDuplicatePropagation duplicatePropagation;
-        final List<EntityProfile> profilesD1, profilesD2;
-
-        String url = "postgresql://localhost/postgres";
-    
-        final EntityDBReader dbReader1 = new EntityDBReader(url);
-    	dbReader1.setTable(table_0_file_path);
-    	dbReader1.setUser("postgres");
-    	dbReader1.setPassword("postgres");
-    	dbReader1.setSSL(false);
-        profilesD1 = dbReader1.getEntityProfiles();
-    
-        final EntityDBReader dbReader2 = new EntityDBReader(url);
-    	dbReader2.setTable(table_1_file_path);
-    	dbReader2.setUser("postgres");
-    	dbReader2.setPassword("postgres");
-    	dbReader2.setSSL(false);
-        profilesD2 = dbReader2.getEntityProfiles();
-
-        ErContent(profilesD1, profilesD2, table_0_id, table_1_id,
+        ErContent(Main. left_entity_profiles_, 
+                  Main.right_entity_profiles_, 
                     graph_linke_simTh,
-                     unique_map_simTh, m_path);
+                     unique_map_simTh);
 
         return;
     }
     
     private static void ErContent(List<EntityProfile> table_0_profiles, 
                                   List<EntityProfile> table_1_profiles,
-                                               String table_0_id,
-                                               String table_1_id,
                                                float graph_linke_simTh,
-                                               float  unique_map_simTh,
-                                               String m_path) {
+                                               float  unique_map_simTh) {
+        
+        System.out.println("table_0_profiles.size(): " + table_0_profiles.size());
+        System.out.println("table_1_profiles.size(): " + table_1_profiles.size());
 
         final StringBuilder workflowConf = new StringBuilder();
         final StringBuilder workflowName = new StringBuilder();
@@ -520,13 +493,14 @@ public class Main {
                                                                              unique_map_simTh);
 
         final EquivalenceCluster[] entityClusters = entityClusteringMethod.getDuplicates(simPairs);
+        
+        Main.entity_id_matched_left_ .clear();
+        Main.entity_id_matched_right_.clear();
 
+        table_0_profiles.clear();
+        table_1_profiles.clear();
+        
         try {
-            StringBuilder sb = new StringBuilder();
-            sb.append(table_0_id
-              + "," + table_1_id + "\n");
-            final PrintWriter printWriter = new PrintWriter(new File(m_path));
-
             for (int i = 0 ; i < entityClusters.length; i++) {
                 TIntList entityIdsD1 = entityClusters[i].getEntityIdsD1();
                 TIntList entityIdsD2 = entityClusters[i].getEntityIdsD2();
@@ -535,33 +509,32 @@ public class Main {
                     continue;
                 }
                 for (int j = 0; j < entityIdsD1.size(); j++) {
-                    Set<Attribute> table_0_attr = table_0_profiles.get(entityIdsD1.get(j)).getAttributes(),
-                                   table_1_attr = table_1_profiles.get(entityIdsD2.get(j)).getAttributes();
-                    
-                    for(Attribute attr : table_0_attr) {
-                        if (!attr.getName().equals(table_0_id)) {
-                            continue;
-                        }
-                        sb.append("\"" + attr.getValue() + "\",\"");
-                        break;
-                    }
-                    for(Attribute attr : table_1_attr) {
-                        if (!attr.getName().equals(table_1_id)) {
-                            continue;
-                        }
-                        sb.append(attr.getValue() + "\"\n");
-                        break;
-                    }
+                    Main.entity_id_matched_left_ .add(entityIdsD1.get(j));
+                    Main.entity_id_matched_right_.add(entityIdsD2.get(j));
                 }
             }
-    
-            printWriter.write(sb.toString());
-            printWriter.close();
         }
         catch (Exception e) {
             System.out.println(e);
         }
         return;
+    }
+
+    public static int entity_pair_num() {
+        return Main.entity_id_matched_left_.size();
+    }
+
+    public static int entity_id_matched_left(int idx) {
+        // return Main.entity_id_matched_left_;
+        // System.out.println("Main.entity_id_matched_left_:");
+        // System.out.println(Main.entity_id_matched_left_);
+        return Main.entity_id_matched_left_.get(idx);
+    }
+
+    public static int entity_id_matched_right(int idx) {
+        // System.out.println("Main.entity_id_matched_right_:");
+        // System.out.println(Main.entity_id_matched_right_);
+        return Main.entity_id_matched_right_.get(idx);
     }
 
     // public static void Test(String str) {
@@ -617,5 +590,8 @@ public class Main {
     
     private static List<EntityProfile>  left_entity_profiles_ = new ArrayList<EntityProfile>();
     private static List<EntityProfile> right_entity_profiles_ = new ArrayList<EntityProfile>();
+
+    private static List<Integer> entity_id_matched_left_  = new ArrayList<Integer>();
+    private static List<Integer> entity_id_matched_right_ = new ArrayList<Integer>();
     // EntityProfile newProfile
 }

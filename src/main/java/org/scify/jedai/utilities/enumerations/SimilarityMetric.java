@@ -76,6 +76,10 @@ public enum SimilarityMetric {
 //                simMetrics.add(COSINE_SIMILARITY);
 //                try euclidean distance, too!
 //                break;
+           case PRETRAINED_WORD_VECTORS:
+           case PRETRAINED_CHARACTER_VECTORS:
+               simMetrics.add(COSINE_SIMILARITY);
+               break;
             default:
                 return null;
         }
